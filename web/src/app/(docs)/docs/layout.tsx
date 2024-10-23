@@ -1,16 +1,19 @@
-import { Providers } from "./providers";
 import "@/app/(app)/globals.css";
 import { Layout } from "@/components/docs/Layout";
 import { type Section } from "@/components/docs/SectionProvider";
 import glob from "fast-glob";
 import { type Metadata } from "next";
 import PlausibleProvider from "next-plausible";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: {
     template: "%s - Protocol API Reference",
     default: "Protocol API Reference",
   },
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+  ),
 };
 
 export default async function RootLayout({
