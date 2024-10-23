@@ -4,7 +4,7 @@ const { default: postgres } = await import("postgres");
 
 import { config } from "dotenv";
 config({
-  path: ".local.env",
+  path: ".env.local",
 });
 
 const migrationsFolderName = process.env.MIGRATIONS_FOLDER || "drizzle";
@@ -18,7 +18,7 @@ const isDevContainer = process.env.REMOTE_CONTAINERS !== undefined;
 if (isDevContainer)
   connectionString = connectionString.replace(
     "localhost",
-    "host.docker.internal",
+    "host.docker.internal"
   );
 
 const sql = postgres(connectionString, { max: 1, ssl: sslMode as any });
