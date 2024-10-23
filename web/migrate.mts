@@ -1,46 +1,46 @@
-const { drizzle } = await import("drizzle-orm/postgres-js");
-const { migrate } = await import("drizzle-orm/postgres-js/migrator");
-const { default: postgres } = await import("postgres");
-
 import { config } from "dotenv";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import postgres from "postgres";
+
+// Load production environment variables
 config({
   path: ".env.local",
 });
 
-const migrationsFolderName = process.env.MIGRATIONS_FOLDER || "drizzle";
-let sslMode: string | boolean = process.env.SSL || "require";
+// Database connection configuration
+const migrationsFolderName = "drizzle"; // Set default folder name directly
+const connectionString = process.env.POSTGRES_URL!;
 
-if (sslMode === "false") sslMode = false;
-
-let connectionString = process.env.POSTGRES_URL!;
-
-const isDevContainer = process.env.REMOTE_CONTAINERS !== undefined;
-if (isDevContainer)
-  connectionString = connectionString.replace(
-    "localhost",
-    "host.docker.internal"
-  );
-
-const sql = postgres(connectionString, { max: 1, ssl: sslMode as any });
-const db = drizzle(sql, {
-  logger: true,
+// Initialize postgres connection
+const sql = postgres(connectionString, {
+  max: 1, // Limit to single connection for migrations
+  ssl: false, // Disable SSL for local development
 });
 
-let retries = 5;
-while (retries) {
+// Initialize Drizzle ORM
+const db = drizzle(sql, {
+  logger: true, // Log queries for debugging
+});
+
+// Run migrations
+async function runMigrations() {
   try {
+    // Test database connection
     await sql`SELECT NOW()`;
-    console.log("Database is live");
-    break;
+    console.log("✓ Database connection successful");
+
+    // Run the migrations
+    console.log("Starting migrations...");
+    await migrate(db, { migrationsFolder: migrationsFolderName });
+    console.log("✓ Migrations completed successfully");
   } catch (error) {
-    console.error("Database is not live yet", error);
-    retries -= 1;
-    console.log(`Retries left: ${retries}`);
-    await new Promise((res) => setTimeout(res, 1000));
+    console.error("Migration failed:", error);
+    process.exit(1);
+  } finally {
+    await sql.end(); // Clean up connection
+    process.exit(0);
   }
 }
 
-console.log("Migrating...");
-await migrate(db, { migrationsFolder: migrationsFolderName });
-console.log("Done!");
-process.exit();
+runMigrations();
